@@ -234,11 +234,9 @@ router.post("/uploadImage", upload, async (req, res) => {
       return res.status(404).json({ message: "User not found." });
     }
 
-    // Update the user document with the image path
     user.imagePath = filePath;
     await user.save();
 
-    // Send a success response with the file path
     res.status(200).json({
       message: "Image uploaded successfully!",
       filePath: filePath,
