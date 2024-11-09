@@ -1,6 +1,9 @@
 import express from "express";
 import bcrypt from "bcryptjs";
-import User from "../schema/User.js"; // Import User model using ES Module syntax
+import User from "../schema/User.js";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 const router = express.Router();
 
@@ -160,7 +163,6 @@ router.delete("/delete", async (req, res) => {
   }
 });
 
-// Retrieve All Users Route
 router.get("/getAll", async (req, res) => {
   try {
     const users = await User.find({}, "fullName email password"); // Select specific fields to return
@@ -170,6 +172,77 @@ router.get("/getAll", async (req, res) => {
     }
 
     res.status(200).json(users);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = "images";
+
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir);
+    }
+
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  const fileTypes = /jpeg|jpg|png|gif/;
+  const extname = fileTypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = fileTypes.test(file.mimetype);
+
+  if (extname && mimetype) {
+    return cb(null, true);
+  } else {
+    return cb(new Error("Only JPEG, PNG, and GIF files are allowed."));
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 },
+}).single("image");
+
+router.post("/uploadImage", upload, async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: "Email Id must be provided" });
+    }
+    if (!isValidEmail(email)) {
+      return res
+        .status(400)
+        .json({ message: "Please enter a valid email address." });
+    }
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded." });
+    }
+
+    const filePath = `images/${req.file.filename}`;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // Update the user document with the image path
+    user.imagePath = filePath;
+    await user.save();
+
+    // Send a success response with the file path
+    res.status(200).json({
+      message: "Image uploaded successfully!",
+      filePath: filePath,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error", error });
