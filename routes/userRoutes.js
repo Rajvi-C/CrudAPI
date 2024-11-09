@@ -15,9 +15,20 @@ const isValidFullName = (fullName) => {
   return nameRegex.test(fullName) && fullName.trim().length > 0;
 };
 
-router.post("/user", async (req, res) => {
+const isValidPassword = (password) => {
+  const strongPassword = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*\W).{8,}$/;
+  return strongPassword.test(password);
+};
+
+router.post("/create", async (req, res) => {
   try {
     const { fullName, email, password } = req.body;
+
+    if (!fullName || !email || !password) {
+      return res.status(400).json({
+        message: "Inadequate details to create user",
+      });
+    }
 
     if (!isValidFullName(fullName)) {
       return res.status(400).json({
@@ -32,8 +43,7 @@ router.post("/user", async (req, res) => {
         .json({ message: "Please enter a valid email address." });
     }
 
-    const strongPassword = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*\W).{8,}$/;
-    if (!strongPassword.test(password)) {
+    if (!isValidPassword(password)) {
       return res.status(400).json({
         message:
           "Password must be at least 8 characters long and include an uppercase letter, a number, and a special character.",
@@ -57,6 +67,111 @@ router.post("/user", async (req, res) => {
 
     res.status(201).json({ message: "User created successfully!" });
   } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+router.put("/edit", async (req, res) => {
+  try {
+    const { email, fullName, password } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required!" });
+    }
+
+    if (!fullName && !password) {
+      return res.status(400).json({ message: "No field provided to update." });
+    }
+
+    if (!isValidEmail(email)) {
+      return res
+        .status(400)
+        .json({ message: "Please enter a valid email address." });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    if (fullName) {
+      if (!isValidFullName(fullName)) {
+        return res.status(400).json({
+          message:
+            "Full name must contain only letters and spaces and cannot be blank.",
+        });
+      }
+      user.fullName = fullName;
+    }
+
+    if (password) {
+      if (!isValidPassword(password)) {
+        return res.status(400).json({
+          message:
+            "Password must be at least 8 characters long and include an uppercase letter, a number, and a special character.",
+        });
+      }
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+    }
+
+    if (!fullName && !password) {
+      return res.status(400).json({ message: "No field provided to update." });
+    }
+
+    await user.save();
+
+    res
+      .status(200)
+      .json({ message: `User details of ${email} updated successfully!` });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+router.delete("/delete", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email Id must be provided" });
+    }
+
+    if (!isValidEmail(email)) {
+      return res
+        .status(400)
+        .json({ message: "Please enter a valid email address." });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    await User.deleteOne({ email });
+
+    res
+      .status(200)
+      .json({ message: `User with email ${email} deleted successfully!` });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+// Retrieve All Users Route
+router.get("/getAll", async (req, res) => {
+  try {
+    const users = await User.find({}, "fullName email password"); // Select specific fields to return
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "No users found." });
+    }
+
+    res.status(200).json(users);
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Server error", error });
   }
 });

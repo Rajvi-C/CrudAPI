@@ -8,7 +8,8 @@ app.use(express.json());
 
 connectDB();
 
-app.use(userRouter);
+app.use("/user", userRouter);
+console.log("App started");
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
