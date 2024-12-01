@@ -307,6 +307,7 @@ router.post("/login", async (req, res) => {
     const userResponse = {
       email: user.email,
       name: user.fullName,
+      type: user.type,
     };
 
     res.status(200).json({
