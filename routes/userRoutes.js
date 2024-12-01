@@ -25,9 +25,9 @@ const isValidPassword = (password) => {
 
 router.post("/create", async (req, res) => {
   try {
-    const { fullName, email, password } = req.body;
+    const { fullName, email, password, type } = req.body;
 
-    if (!fullName || !email || !password) {
+    if (!fullName || !email || !password || !type) {
       return res.status(400).json({
         message: "Inadequate details to create user",
       });
@@ -53,6 +53,12 @@ router.post("/create", async (req, res) => {
       });
     }
 
+    if (!["employee", "admin"].includes(type)) {
+      return res.status(400).json({
+        message: "Type must be either 'employee' or 'admin'.",
+      });
+    }
+
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists." });
@@ -65,6 +71,7 @@ router.post("/create", async (req, res) => {
       fullName,
       email,
       password: hashedPassword,
+      type, // Add the type here
     });
     await user.save();
 

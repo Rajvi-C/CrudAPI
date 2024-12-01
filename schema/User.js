@@ -18,6 +18,12 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
+  type: {
+    type: String,
+    required: true,
+    enum: ["employee", "admin"],
+    message: "Type must be either 'employee' or 'admin'.",
+  },
 });
 
 const User = mongoose.model("User", userSchema);
