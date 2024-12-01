@@ -71,7 +71,7 @@ router.post("/create", async (req, res) => {
       fullName,
       email,
       password: hashedPassword,
-      type, // Add the type here
+      type,
     });
     await user.save();
 
@@ -179,7 +179,7 @@ router.delete("/delete", async (req, res) => {
 
 router.get("/getAll", async (req, res) => {
   try {
-    const users = await User.find({}, "fullName email password"); // Select specific fields to return
+    const users = await User.find({}, "-password");
 
     if (users.length === 0) {
       return res.status(404).json({ message: "No users found." });
