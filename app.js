@@ -5,6 +5,7 @@ import { fileURLToPath } from "url"; // For __dirname in ES modules
 import { userRouter } from "./routes/userRoutes.js";
 import connectDB from "./config/db.js";
 import { companyRouter } from "./routes/companyRoutes.js";
+import { jobRouter } from "./routes/jobRoutes.js";
 
 const app = express();
 app.use(cors());
@@ -27,6 +28,7 @@ connectDB();
 // Routes
 app.use("/user", userRouter);
 app.use("/company", companyRouter);
+app.use("/job", jobRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
